@@ -44,6 +44,7 @@ from src.cafe_model import (
     CafeRevenueModel,
     build_test_grid_if_missing,
 )
+from src.cafe_model_v2 import CafeRevenueModelV2
 
 __all__ = [
     "DATA_DIR",
@@ -71,5 +72,6 @@ __all__ = [
     "BaselineWeekdayModel",
     "weekday_median",
     "CafeRevenueModel",
+    "CafeRevenueModelV2",
     "build_test_grid_if_missing",
 ]

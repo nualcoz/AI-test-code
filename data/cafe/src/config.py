@@ -59,8 +59,10 @@ SAMPLE_SUB_PATH = find_data_file("sample_submission.csv")
 
 # Đường dẫn file mô hình và kết quả
 CAFE_MODEL_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model.pkl")
+CAFE_MODEL_V2_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model_v2.pkl")
 BASELINE_MODEL_PATH = os.path.join(MODELS_DIR, "baseline_model.pkl")
 SUBMISSION_PATH = os.path.join(SUBMISSIONS_DIR, "submission.csv")
+SUBMISSION_V2_PATH = os.path.join(SUBMISSIONS_DIR, "submission_v2.csv")
 SUBMISSION_BASELINE_PATH = os.path.join(SUBMISSIONS_DIR, "submission_baseline.csv")
 
 # Siêu tham số mặc định của CafeRevenueModel
