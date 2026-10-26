@@ -13,6 +13,8 @@ E:\study\AI\test 1\Kaggle_Competition/
 │
 ├── data/
 │   ├── cafe/                      # Dự án 1: Cafe Revenue (Regression)
+│   │   ├── venv/                  # Môi trường ảo riêng cho Cafe
+│   │   ├── requirements.txt       # Danh sách thư viện cho Cafe
 │   │   ├── data/                  # train.csv, stores.csv, weather.csv, holidays.csv
 │   │   ├── src/                   # config, cleaning, features, baseline_model, cafe_model
 │   │   ├── notebooks/             # starter, eda, solution notebooks
@@ -24,6 +26,8 @@ E:\study\AI\test 1\Kaggle_Competition/
 │   │   └── inspect_model.py       # Khám phá trọng số mô hình
 │   │
 │   └── churn/                     # Dự án 2: Card Churn (Classification)
+│       ├── venv/                  # Môi trường ảo riêng cho Churn
+│       ├── requirements.txt       # Danh sách thư viện cho Churn
 │       ├── data/                  # train.csv, sample_submission.csv
 │       ├── src/                   # config, cleaning, features, baseline_model, churn_model
 │       ├── notebooks/             # starter, eda, solution notebooks
@@ -34,8 +38,6 @@ E:\study\AI\test 1\Kaggle_Competition/
 │       ├── predict.py             # Sinh file submission
 │       └── inspect_model.py       # Khám phá trọng số mô hình
 │
-├── venv/                          # Môi trường ảo Python (Virtual Environment)
-├── requirements.txt               # Danh sách thư viện cần thiết
 ├── .gitignore                     # Cấu hình bỏ qua venv, cache, file tạm
 └── README.md                      # Tài liệu tổng quan dự án
 ```
@@ -44,25 +46,29 @@ E:\study\AI\test 1\Kaggle_Competition/
 
 ## 2. Hướng Dẫn Kích Hoạt Môi Trường Ảo (Virtual Environment)
 
-Môi trường ảo `venv` đã được cài đặt sẵn tại thư mục gốc.
+Mỗi dự án đều có môi trường ảo riêng biệt nằm trực tiếp bên trong thư mục của nó:
+- **Dự án Cafe**: `data/cafe/venv`
+- **Dự án Churn**: `data/churn/venv`
 
-### Trên Windows (PowerShell):
+### 2.1. Kích hoạt venv cho dự án Cafe:
 ```powershell
+# Chuyển vào thư mục cafe
+cd data/cafe
+
 # Kích hoạt venv
 .\venv\Scripts\Activate.ps1
-
-# (Nếu gặp lỗi ExecutionPolicy, chạy lệnh sau một lần: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned)
 ```
 
-### Trên Windows (Command Prompt - cmd):
-```cmd
-venv\Scripts\activate.bat
+### 2.2. Kích hoạt venv cho dự án Churn:
+```powershell
+# Chuyển vào thư mục churn
+cd data/churn
+
+# Kích hoạt venv
+.\venv\Scripts\Activate.ps1
 ```
 
-### Cài đặt lại thư viện khi cần:
-```bash
-pip install -r requirements.txt
-```
+*(Trên Command Prompt - cmd, bạn chạy `venv\Scripts\activate.bat`).*
 
 ---
 
