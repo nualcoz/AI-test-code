@@ -106,3 +106,29 @@ def clean_train(df_in: pd.DataFrame, stores_clean: pd.DataFrame) -> Tuple[pd.Dat
         "fixed_01x": int(mask_01x.sum()),
     }
     return df[["date", "store_id", "is_promo", "revenue"]].reset_index(drop=True), stats
+
+
+def clean_test(test_raw: pd.DataFrame, stores_clean: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
+    """Làm sạch, chuẩn hóa và kiểm toán dữ liệu kiểm thử test.csv."""
+    df = test_raw.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df["store_id"] = df["store_id"].astype(str).str.strip()
+    df["is_promo"] = df["is_promo"].astype(int)
+
+    # Kiểm tra store_id hợp lệ
+    valid_stores = set(stores_clean["store_id"])
+    unknown_stores = set(df["store_id"]) - valid_stores
+
+    # Kiểm tra missing values
+    missing_counts = df.isnull().sum().to_dict()
+
+    stats = {
+        "total_rows": len(df),
+        "unique_stores": df["store_id"].nunique(),
+        "date_range": (str(df["date"].min().date()), str(df["date"].max().date())),
+        "promo_days_count": int(df["is_promo"].sum()),
+        "promo_ratio": float(df["is_promo"].mean()),
+        "missing_values": missing_counts,
+        "unknown_stores": list(unknown_stores),
+    }
+    return df, stats

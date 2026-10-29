@@ -14,13 +14,18 @@ from src.config import (
     SUBMISSIONS_DIR,
     REPORTS_DIR,
     TRAIN_PATH,
+    TEST_PATH,
     STORES_PATH,
     WEATHER_PATH,
     HOLIDAYS_PATH,
     SAMPLE_SUB_PATH,
     CAFE_MODEL_PATH,
+    CAFE_MODEL_V2_PATH,
+    CAFE_MODEL_V3_PATH,
     BASELINE_MODEL_PATH,
     SUBMISSION_PATH,
+    SUBMISSION_V2_PATH,
+    SUBMISSION_V3_PATH,
     SUBMISSION_BASELINE_PATH,
     MODEL_PARAMS,
     EVAL_QUARTERS,
@@ -30,6 +35,7 @@ from src.cleaning import (
     clean_weather,
     clean_holidays,
     clean_train,
+    clean_test,
 )
 from src.features import (
     enrich_data,
@@ -45,6 +51,7 @@ from src.cafe_model import (
     build_test_grid_if_missing,
 )
 from src.cafe_model_v2 import CafeRevenueModelV2
+from src.cafe_model_v3 import CafeRevenueModelV3
 
 __all__ = [
     "DATA_DIR",
@@ -52,13 +59,18 @@ __all__ = [
     "SUBMISSIONS_DIR",
     "REPORTS_DIR",
     "TRAIN_PATH",
+    "TEST_PATH",
     "STORES_PATH",
     "WEATHER_PATH",
     "HOLIDAYS_PATH",
     "SAMPLE_SUB_PATH",
     "CAFE_MODEL_PATH",
+    "CAFE_MODEL_V2_PATH",
+    "CAFE_MODEL_V3_PATH",
     "BASELINE_MODEL_PATH",
     "SUBMISSION_PATH",
+    "SUBMISSION_V2_PATH",
+    "SUBMISSION_V3_PATH",
     "SUBMISSION_BASELINE_PATH",
     "MODEL_PARAMS",
     "EVAL_QUARTERS",
@@ -66,6 +78,7 @@ __all__ = [
     "clean_weather",
     "clean_holidays",
     "clean_train",
+    "clean_test",
     "enrich_data",
     "build_shared_matrix",
     "build_gbdt_matrix",
@@ -73,5 +86,6 @@ __all__ = [
     "weekday_median",
     "CafeRevenueModel",
     "CafeRevenueModelV2",
+    "CafeRevenueModelV3",
     "build_test_grid_if_missing",
 ]

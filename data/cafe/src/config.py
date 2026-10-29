@@ -52,6 +52,7 @@ def find_data_file(filename: str) -> str:
 
 # Đường dẫn các file dữ liệu
 TRAIN_PATH = find_data_file("train.csv")
+TEST_PATH = find_data_file("test.csv")
 STORES_PATH = find_data_file("stores.csv")
 WEATHER_PATH = find_data_file("weather.csv")
 HOLIDAYS_PATH = find_data_file("holidays.csv")
@@ -60,9 +61,11 @@ SAMPLE_SUB_PATH = find_data_file("sample_submission.csv")
 # Đường dẫn file mô hình và kết quả
 CAFE_MODEL_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model.pkl")
 CAFE_MODEL_V2_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model_v2.pkl")
+CAFE_MODEL_V3_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model_v3.pkl")
 BASELINE_MODEL_PATH = os.path.join(MODELS_DIR, "baseline_model.pkl")
 SUBMISSION_PATH = os.path.join(SUBMISSIONS_DIR, "submission.csv")
 SUBMISSION_V2_PATH = os.path.join(SUBMISSIONS_DIR, "submission_v2.csv")
+SUBMISSION_V3_PATH = os.path.join(SUBMISSIONS_DIR, "submission_v3.csv")
 SUBMISSION_BASELINE_PATH = os.path.join(SUBMISSIONS_DIR, "submission_baseline.csv")
 
 # Siêu tham số mặc định của CafeRevenueModel
