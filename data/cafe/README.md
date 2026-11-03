@@ -46,13 +46,16 @@ cafe/
 │       └── solution_part_2.ipynb       # Giải pháp V2 (trước khi có test.csv)
 │
 ├── reports/                            # Báo cáo phân tích chuyên sâu & quản trị kinh doanh
-│   ├── bao_cao_tong_quan_du_an_cafe.md # [MỚI] Báo cáo tổng quan hoàn chỉnh dự án Cafe Revenue
+│   ├── Bao_Cao_Tong_Quan_Du_An_Cafe_Revenue.docx # [MỚI] FILE BÁO CÁO TỔNG QUAN WORD CHÍNH THỨC
+│   ├── bao_cao_tong_quan_du_an_cafe.md # Báo cáo tổng quan dự án định dạng Markdown
+│   ├── figures/                        # 8 đồ thị phân tích chất lượng cao nhúng trong báo cáo
 │   └── phan_tich_du_lieu_cafe.md       # Báo cáo phân tích EDA ban đầu
 │
 ├── docs/                               # Tài liệu học tập & slide bài giảng
 │   └── Chapter 4 - Building models and developing AI applications.pdf # Giáo trình Chapter 4 NEU FIT
 │
 ├── scripts/                            # Các công cụ script tự động sinh và thực thi notebook
+│   ├── export_word_report.py           # Script tự động xuất toàn bộ báo cáo ra file Word (.docx)
 │   ├── build_full_report_pipeline.py   # Script sinh chuỗi P1 -> P5
 │   ├── build_chapter4_steps.py         # Script sinh chuỗi Step 1 -> Step 8
 │   ├── build_p1_cleaning_notebook.py   # Script sinh P1
