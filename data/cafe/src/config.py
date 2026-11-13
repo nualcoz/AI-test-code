@@ -59,28 +59,10 @@ HOLIDAYS_PATH = find_data_file("holidays.csv")
 SAMPLE_SUB_PATH = find_data_file("sample_submission.csv")
 
 # Đường dẫn file mô hình và kết quả
-CAFE_MODEL_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model.pkl")
-CAFE_MODEL_V2_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model_v2.pkl")
 CAFE_MODEL_V3_PATH = os.path.join(MODELS_DIR, "cafe_revenue_model_v3.pkl")
 BASELINE_MODEL_PATH = os.path.join(MODELS_DIR, "baseline_model.pkl")
-SUBMISSION_PATH = os.path.join(SUBMISSIONS_DIR, "submission.csv")
-SUBMISSION_V2_PATH = os.path.join(SUBMISSIONS_DIR, "submission_v2.csv")
 SUBMISSION_V3_PATH = os.path.join(SUBMISSIONS_DIR, "submission_v3.csv")
 SUBMISSION_BASELINE_PATH = os.path.join(SUBMISSIONS_DIR, "submission_baseline.csv")
-
-# Siêu tham số mặc định của CafeRevenueModel
-MODEL_PARAMS = {
-    "ridge_alpha": 0.5,
-    "hl_long": 365.0,
-    "hl_mid": 50.0,
-    "w_long": 0.25,
-    "k_meta": 2.0,
-    "ar_rho": 0.80,
-    "ar_scale": 0.65,
-    "w_log1p": 0.25,
-    "gbdt_weight": 0.10,
-    "random_state": 42,
-}
 
 # Các mốc phân chia kiểm định chéo theo quý năm 2025
 EVAL_QUARTERS = {

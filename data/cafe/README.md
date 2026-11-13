@@ -1,110 +1,103 @@
-# Dự Án Dự Báo Doanh Thu Chuỗi Cửa Hàng Cafe (Kaggle Competition)
+# Dự Án Dự Báo Doanh Thu Chuỗi Cửa Hàng Cafe (`CafeRevenueModelV3`)
 
-Dự án AI phân tích và dự báo doanh thu hàng ngày cho từng cửa hàng trong chuỗi cà phê cho Quý 1/2026 (01/01/2026 đến 31/03/2026) theo thang đo **RMSLE** trên $\log(1 + \text{revenue})$.
+Giải pháp **AI & Data Science chuẩn Production** dự báo doanh thu hàng ngày (tính bằng **triệu VNĐ**) cho 45 cửa hàng cà phê trong **Quý 1/2026** (86–90 ngày/cửa hàng sau khi loại ngày nghỉ Tết, tổng cộng **3.869 dòng**), sử dụng thước đo đánh giá **RMSLE** (*Root Mean Squared Logarithmic Error*).
 
 ---
 
-## 1. Cấu Trúc Dự Án Đã Được Dọn Dẹp & Phân Nhóm Chuẩn Mực
-
-Toàn bộ thư mục đã được làm sạch, loại bỏ hoàn toàn các file và thư mục trùng lặp, chia thành từng nhóm chức năng rõ ràng:
+## 1. Cấu Trúc Thư Mục Tối Ưu
 
 ```text
 cafe/
+├── data/                                    # Dữ liệu thô gốc Kaggle (bất biến)
+│   ├── train.csv                            # 26.632 dòng lịch sử 2024–2025 (chứa nhiễu DGP chủ đích)
+│   ├── test.csv                             # 3.869 dòng Q1/2026 với is_promo thực tế (380 ngày, 9.8%)
+│   ├── stores.csv                           # 45 cửa hàng (diện tích, ghế, thành phố, loại hình)
+│   ├── weather.csv                          # 1.593 quan sát thời tiết hàng ngày theo thành phố
+│   ├── holidays.csv                         # 55 sự kiện/ngày lễ, chu kỳ Tết
+│   └── sample_submission.csv                # Khung nộp bài mẫu 3.869 dòng
 │
-├── data/                               # Dữ liệu cuộc thi chính thức
-│   ├── train.csv                       # Lịch sử doanh thu 2024-2025 (26.632 dòng)
-│   ├── test.csv                        # Tập kiểm thử Quý 1/2026 có nhãn promo (3.869 dòng)
-│   ├── stores.csv                      # Hồ sơ 45 cửa hàng (diện tích, chỗ ngồi, loại quán)
-│   ├── weather.csv                     # Chuỗi thời tiết Hà Nội, TP.HCM, Đà Nẵng
-│   ├── holidays.csv                    # Danh mục ngày lễ, sự kiện và Tết Âm lịch
-│   └── sample_submission.csv           # Mẫu nộp bài Kaggle (3.869 dòng)
+├── docs/                                    # Tài liệu chuẩn phương pháp luận
+│   └── Chapter 4 - Building models and developing AI applications.pdf
 │
-├── notebooks/                          # Toàn bộ Jupyter Notebooks (Phân chia 3 nhóm khoa học)
-│   │
-│   ├── 01_bao_cao_chuyen_sau/          # [NHÓM 1] Chuỗi 5 Notebooks xây dựng Báo cáo Tổng quan (P1 -> P5)
-│   │   ├── P1_Cleandata_compare.ipynb  # Phần 1: Làm sạch dữ liệu, công cụ & so sánh Before-After
-│   │   ├── P2_So_sanh_2024_2025_2026.ipynb # Phần 2: So sánh toàn diện lịch sử 2024, 2025 với 2026
-│   │   ├── P3_Feature_Engineering_Tet_Cycles.ipynb # Phần 3: Kỹ thuật đặc trưng chu kỳ Tết & thời tiết
-│   │   ├── P4_Model_Development_Validation.ipynb # Phần 4: Huấn luyện, tối ưu mô hình & kiểm định 4 Quý
-│   │   └── P5_Forecast_2026_Executive_Report.ipynb # Phần 5: Dự báo Q1/2026 & Báo cáo tổng quan kinh doanh
-│   │
-│   ├── 02_quy_trinh_8_buoc_chapter4/   # [NHÓM 2] Chuỗi 8 Notebooks chuẩn giáo trình Chapter 4 (NEU FIT)
-│   │   ├── Step1_Collect_Prepare.ipynb # Step 1: Đọc dữ liệu, merge bảng & Data Dictionary
-│   │   ├── Step2_Explore_EDA.ipynb     # Step 2: Khám phá cấu trúc, missing, biểu đồ phân phối
-│   │   ├── Step3_Preprocess_Clean.ipynb# Step 3: Tiền xử lý, khử lỗi 1000x, 10x, 0.1x, độ F, one-hot
-│   │   ├── Step4_Split_Validation.ipynb# Step 4: Time-based split 4 quý năm 2025 (Rule 1)
-│   │   ├── Step5_Scale_Feature_Engineering.ipynb # Step 5: Log1p, StandardScaler, tương tác đặc trưng (Rule 2)
-│   │   ├── Step6_Model_Train.ipynb     # Step 6: Model zoo (Baseline, Ridge, GBDT, CafeModelV3) (Rule 3)
-│   │   ├── Step7_Evaluate_Diagnostics.ipynb # Step 7: Đánh giá RMSLE, Actual vs Pred, Residuals (Rule 4)
-│   │   └── Step8_Deploy_Submission.ipynb # Step 8: Lưu mô hình joblib, Colab Form What-If, xuất file
-│   │
-│   └── 03_notebooks_tham_khao/         # [NHÓM 3] Notebooks tổng hợp & nghiên cứu ban đầu
-│       ├── solution_with_test.ipynb    # Bản giải pháp tổng hợp tích hợp test.csv
-│       ├── starter_cafe.ipynb          # Notebook starter gốc từ Kaggle
-│       ├── phan_tich_du_lieu_cafe.ipynb# Phân tích EDA chuyên sâu ban đầu
-│       ├── solution_cafe.ipynb         # Giải pháp V1 (trước khi có test.csv)
-│       └── solution_part_2.ipynb       # Giải pháp V2 (trước khi có test.csv)
+├── models/                                  # Mô hình đã huấn luyện tốt nhất + đối chứng
+│   ├── cafe_revenue_model_v3.pkl            # Mô hình AI tối ưu thế hệ 3 (CafeRevenueModelV3)
+│   └── baseline_model.pkl                   # Mô hình Baseline trung vị (BaselineWeekdayModel)
 │
-├── reports/                            # Báo cáo phân tích chuyên sâu & quản trị kinh doanh
-│   ├── Bao_Cao_Tong_Quan_Du_An_Cafe_Revenue.docx # [MỚI] FILE BÁO CÁO TỔNG QUAN WORD CHÍNH THỨC
-│   ├── bao_cao_tong_quan_du_an_cafe.md # Báo cáo tổng quan dự án định dạng Markdown
-│   ├── figures/                        # 8 đồ thị phân tích chất lượng cao nhúng trong báo cáo
-│   └── phan_tich_du_lieu_cafe.md       # Báo cáo phân tích EDA ban đầu
+├── notebooks/                               # 2 bộ notebook chính
+│   ├── 01_bao_cao_chuyen_sau/               # Chuỗi 5 phần báo cáo chuyên sâu P1 → P5
+│   │   ├── P1_Cleandata_compare.ipynb
+│   │   ├── P2_So_sanh_2024_2025_2026.ipynb
+│   │   ├── P3_Feature_Engineering_Tet_Cycles.ipynb
+│   │   ├── P4_Model_Development_Validation.ipynb
+│   │   └── P5_Forecast_2026_Executive_Report.ipynb
+│   └── 02_quy_trinh_8_buoc_chapter4/        # Quy trình 8 bước chuẩn AI lifecycle (Step 1 → Step 8)
+│       ├── Step1_Collect_Prepare.ipynb
+│       ├── Step2_Explore_EDA.ipynb
+│       ├── Step3_Preprocess_Clean.ipynb
+│       ├── Step4_Split_Validation.ipynb
+│       ├── Step5_Scale_Feature_Engineering.ipynb
+│       ├── Step6_Model_Train.ipynb
+│       ├── Step7_Evaluate_Diagnostics.ipynb
+│       └── Step8_Deploy_Submission.ipynb
 │
-├── docs/                               # Tài liệu học tập & slide bài giảng
-│   └── Chapter 4 - Building models and developing AI applications.pdf # Giáo trình Chapter 4 NEU FIT
+├── reports/                                 # Báo cáo tổng hợp & 8 biểu đồ chuẩn xuất bản
+│   ├── bao_cao_tong_quan_du_an_cafe.md
+│   ├── phan_tich_du_lieu_cafe.md
+│   ├── Bao_Cao_Tong_Quan_Du_An_Cafe_Revenue.docx
+│   └── figures/                             # fig1_cleaning_comparison.png .. fig8_heatmap_city_type.png
 │
-├── scripts/                            # Các công cụ script tự động sinh và thực thi notebook
-│   ├── export_word_report.py           # Script tự động xuất toàn bộ báo cáo ra file Word (.docx)
-│   ├── build_full_report_pipeline.py   # Script sinh chuỗi P1 -> P5
-│   ├── build_chapter4_steps.py         # Script sinh chuỗi Step 1 -> Step 8
-│   ├── build_p1_cleaning_notebook.py   # Script sinh P1
-│   └── generate_and_run_notebook.py    # Script sinh solution_with_test.ipynb
+├── src/                                     # Mã nguồn mô-đun hóa Production
+│   ├── __init__.py
+│   ├── config.py                            # Quản lý đường dẫn & EVAL_QUARTERS
+│   ├── cleaning.py                          # Làm sạch 5 bảng (clean_train, clean_test, build_test_grid_if_missing...)
+│   ├── features.py                          # Đặc trưng phân tích dùng cho P3 & Step5
+│   ├── baseline_model.py                    # BaselineWeekdayModel
+│   └── cafe_model_v3.py                     # CafeRevenueModelV3 (Hierarchical Ridge + AR(1) + HistGBDT + Taylor)
 │
-├── src/                                # Mã nguồn module Python tái sử dụng
-│   ├── __init__.py                     # Package export
-│   ├── config.py                       # Đường dẫn, cấu hình siêu tham số và phân chia kiểm thử
-│   ├── cleaning.py                     # Pipeline làm sạch dữ liệu (clean_train, clean_stores, clean_test)
-│   ├── features.py                     # Xây dựng ma trận đặc trưng
-│   ├── baseline_model.py               # Mô hình Baseline Day-of-Week Median
-│   ├── cafe_model.py                   # Mô hình CafeRevenueModel V1
-│   ├── cafe_model_v2.py                # Mô hình CafeRevenueModel V2
-│   └── cafe_model_v3.py                # Mô hình CafeRevenueModel V3 tối ưu
+├── submissions/                             # Kết quả dự báo Kaggle sạch (không trùng lặp)
+│   ├── submission_v3.csv                    # File nộp bài tối ưu Q1/2026 (3.869 dòng)
+│   └── submission_baseline.csv              # File Baseline dùng để đối chứng
 │
-├── models/                             # Trọng số mô hình đã huấn luyện (.pkl)
-│   ├── cafe_revenue_model_v3.pkl       # [TỐI ƯU] Trọng số CafeRevenueModelV3 (RMSLE 0.1068)
-│   ├── cafe_revenue_model_v2.pkl
-│   ├── cafe_revenue_model.pkl
-│   └── baseline_model.pkl
-│
-├── submissions/                        # Kết quả dự báo nộp lên Kaggle
-│   ├── submission_v3.csv               # File nộp bài tối ưu mới nhất
-│   ├── submission.csv                  # File nộp bài chính thức
-│   └── submission_baseline.csv         # File nộp bài theo baseline
-│
-├── train.py                            # Script chạy huấn luyện mô hình & kiểm định chéo 4 quý
-├── predict.py                          # Script sinh file dự báo submission.csv trực tiếp từ test.csv
-├── inspect_model.py                    # Script xem chi tiết nội dung các file models (.pkl)
-├── submission.csv                      # File nộp bài Kaggle chính thức (ở thư mục gốc)
-└── README.md                           # Hướng dẫn chi tiết dự án
+├── venv/                                    # Môi trường ảo Python riêng cho Cafe
+├── train.py                                 # Kiểm định 4 quý 2025 & huấn luyện CafeRevenueModelV3 + Baseline
+├── predict.py                               # Tải model, kiểm toán test.csv & xuất submissions/submission_v3.csv
+├── inspect_model.py                         # Kiểm tra tham số nội tại của baseline & cafe_revenue_model_v3.pkl
+├── requirements.txt                         # Danh sách thư viện phụ thuộc
+└── README.md
 ```
 
 ---
 
-## 2. Hướng Dẫn Sử Dụng Nhanh
+## 2. Kết Quả Kiểm Định Chéo Out-of-Time (4 Quý Năm 2025)
 
-### Chạy Dự Báo Nộp Bài (Kaggle Submission):
-```bash
-python predict.py
-```
-*Script nạp `data/test.csv`, áp dụng mô hình tối ưu `models/cafe_revenue_model_v3.pkl`, kiểm định toàn vẹn và xuất ra `submission.csv` (3.869 dòng).*
+Chạy kiểm chứng thực tế bằng `python train.py`:
 
-### Huấn Luyện & Kiểm Định Chéo 4 Quý (Backtesting):
+| Giai đoạn kiểm định | Baseline (`BaselineWeekdayModel`) | AI Tối ưu (`CafeRevenueModelV3`) | Mức cải thiện |
+| :--- | :---: | :---: | :---: |
+| **Q1/2025** | `0.2758` | `0.1045` | **-62.12%** |
+| **Q2/2025** | `0.2391` | `0.1027` | **-57.04%** |
+| **Q3/2025** | `0.2750` | `0.1077` | **-60.84%** |
+| **Q4/2025** | `0.2275` | `0.1123` | **-50.64%** |
+| **Trung bình 4 quý** | **`0.2544`** | **`0.1068`** | **-57.66%** |
+
+- **Làm sạch tự động `train.csv`**: Phát hiện và sửa `132` dòng trùng lặp, `30` lỗi `1000x`, `53` lỗi `10x`, và `26` lỗi `0.1x` hoàn toàn trên bản sao trong bộ nhớ, giữ nguyên `data/train.csv` gốc.
+- **Chất lượng `submissions/submission_v3.csv`**: Đúng `3.869` dòng (`['id', 'revenue']`), `0` NaN, `0` giá trị âm, Min = `1.92` tr, Median = `19.81` tr, Max = `69.90` tr.
+
+---
+
+## 3. Hướng Dẫn Chạy Pipeline
+
+> **Lưu ý về phiên bản thư viện:** File `models/cafe_revenue_model_v3.pkl` hiện tại được đóng gói bằng `scikit-learn 1.8.0` / `pandas 2.0.3`. Nếu chạy trong `venv/` (cài `scikit-learn` / `pandas` mới hơn), hãy chạy lại `python train.py` trước khi `predict.py` hoặc `inspect_model.py` để đồng bộ định dạng pickle theo đúng môi trường.
+
 ```bash
+cd data/cafe
+
+# 1. Huấn luyện & kiểm định chéo 4 quý (tạo lại cafe_revenue_model_v3.pkl & baseline_model.pkl)
 python train.py
-```
-*Kiểm định Out-of-Time trên 4 Quý năm 2025, in bảng so sánh RMSLE và lưu mô hình vào `models/`.*
 
-### Đọc Báo Cáo Tổng Quan Dự Án:
-Mở file markdown hoàn chỉnh tại:
-👉 `reports/bao_cao_tong_quan_du_an_cafe.md`
+# 2. Sinh file nộp bài chuẩn Kaggle (submissions/submission_v3.csv)
+python predict.py
+
+# 3. Kiểm tra tham số bên trong mô hình đã lưu
+python inspect_model.py
+```

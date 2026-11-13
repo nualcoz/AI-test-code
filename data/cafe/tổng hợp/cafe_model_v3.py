@@ -1,25 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-src/cafe_model_v2.py
-Mô hình AI dự báo doanh thu chuỗi quán Cafe Thế hệ 2 (CafeRevenueModelV2):
-Kiến trúc tối ưu đạt mức tiệm cận cận dưới toán học (Theoretical Noise Floor ~ 0.104):
-1. Enhanced Domain Feature Engine:
-   - Tách biệt phi tuyến mưa theo ngưỡng (mưa nhẹ vs mưa ngập) kết hợp tương tác loại quán.
-   - Chu kỳ Tết 10 giai đoạn kết hợp tương tác ngày Lễ Tình Nhân Valentine 14/02 cận Tết 2026.
-   - Vòng đời tăng trưởng quán mới (Grand opening 3 ngày + Ramp-up 60 ngày).
-   - Chu kỳ hè và chuyển mùa của các quán đại học.
-2. Dual-Window Empirical Bayes Store Intercept Shrinkage:
+src/cafe_model_v3.py
+Mô hình AI dự báo doanh thu chuỗi quán Cafe Thế hệ 3 (CafeRevenueModelV3):
+Được tối ưu hóa toàn diện khi tích hợp dữ liệu kiểm thử thực tế test.csv:
+1. Enhanced Domain Feature Engine v3:
+   - Tận dụng 100% nhãn khuyến mãi chính xác (is_promo = 0/1) từ test.csv.
+   - Tương tác đa chiều: Khuyến mãi x Loại quán, Khuyến mãi x Cuối tuần (Promo Weekend Effect).
+   - Tương tác Lễ Tình Nhân Valentine 14/02/2026 (27 tháng Chạp Bính Ngọ) & Quốc tế Phụ nữ 08/03.
+   - Phân kỳ Tết 10 giai đoạn chuẩn xác theo văn hóa tiêu dùng và lịch âm Việt Nam.
+   - Phân tách phi tuyến tác động thời tiết: Mưa nhẹ (0-15mm) vs Mưa ngập (>15mm), nhiệt độ theo vùng.
+   - Vòng đời cửa hàng mới (Grand Opening 3 ngày + Ramp-up 60 ngày).
+2. Dual-Window Empirical Bayes Store Intercepts:
    - Kết hợp trọng số suy giảm kép (Half-life 365 ngày cho baseline dài hạn + 50 ngày cho biến động gần).
-   - Mô hình tiên nghiệm Bayesian Ridge trên log(seats), log(area_m2), has_parking và vị trí địa lý.
+   - Bayesian Ridge prior shrinkage dựa trên log(seats), log(area_m2), has_parking và vị trí địa lý.
 3. Kalman AR(1) State Propagation:
-   - Ước lượng trạng thái trễ rho = 0.80 cho từng quán và lan truyền suy giảm rho^h.
-4. Exact Taylor Expansion Correction cho thang đo RMSLE:
-   - Hiệu chỉnh sai số chệch toán học từ log-space sang log1p(revenue).
-5. Stage-2 HistGradientBoosting Residual Learning:
-   - Học các tương tác phi tuyến bậc cao trên thặng dư với điều chuẩn L2 = 25.0.
+   - Ước lượng trạng thái trôi dạt ngắn hạn rho = 0.80 cho từng quán và lan truyền suy giảm rho^h sang Q1/2026.
+4. Stage-2 Non-linear GBDT Residual Learning:
+   - Học bù phần dư phi tuyến bằng HistGradientBoostingRegressor với điều chuẩn L2 cao.
+5. Exact Second-Order Taylor Correction:
+   - Tối ưu hóa trực tiếp cho hàm mục tiêu RMSLE trên log(1 + revenue).
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import joblib
 import numpy as np
 import pandas as pd
@@ -27,23 +29,23 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
-from src.cleaning import clean_stores, clean_weather, clean_holidays, clean_train
-from src.baseline_model import BaselineWeekdayModel
+from src.cleaning import clean_stores, clean_weather, clean_holidays, clean_train, clean_test
+from src.config import EVAL_QUARTERS
 
 
-class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
-    """Mô hình AI dự báo doanh thu chuỗi Cafe Thế hệ 2 tối ưu leaderboard Kaggle."""
+class CafeRevenueModelV3(BaseEstimator, RegressorMixin):
+    """Mô hình AI dự báo doanh thu chuỗi Cafe Thế hệ 3 tối ưu leaderboard Kaggle với dữ liệu test thực tế."""
 
     def __init__(
         self,
-        ridge_alpha: float = 0.45,
+        ridge_alpha: float = 0.40,
         hl_long: float = 365.0,
         hl_mid: float = 50.0,
         w_long: float = 0.25,
         k_meta: float = 2.0,
         ar_rho: float = 0.80,
         ar_scale: float = 0.65,
-        sigma_noise: float = 0.105,
+        sigma_noise: float = 0.104,
         gbdt_weight: float = 0.08,
         random_state: int = 42,
     ):
@@ -58,7 +60,7 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         self.gbdt_weight = gbdt_weight
         self.random_state = random_state
 
-    def _enrich_data_v2(self, df_in: pd.DataFrame) -> pd.DataFrame:
+    def _enrich_data(self, df_in: pd.DataFrame) -> pd.DataFrame:
         df = df_in.copy()
         df["date"] = pd.to_datetime(df["date"])
         df = df.merge(self.stores_c_, on="store_id", how="left").merge(
@@ -70,7 +72,7 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         df["tet_date"] = df["date"].dt.year.map(self.tet_dates_)
         df["tet_offset"] = (df["date"] - df["tet_date"]).dt.days
 
-        # Phân kỳ Tết 10 giai đoạn chính xác theo hành vi người tiêu dùng Việt Nam
+        # Phân kỳ Tết 10 giai đoạn
         df["tet_phase"] = "none"
         df.loc[df["tet_offset"].between(-14, -13), "tet_phase"] = "pre_tet_14_13"
         df.loc[df["tet_offset"].between(-12, -11), "tet_phase"] = "pre_tet_12_11"
@@ -83,18 +85,21 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         df.loc[df["tet_offset"].between(8, 9), "tet_phase"] = "post_tet_8_9"
         df.loc[df["tet_offset"].between(10, 12), "tet_phase"] = "post_tet_10_12"
 
-        # Tương tác Valentine (14/02) khi rơi vào kỳ nghỉ Tết
-        is_valentine = ((df["date"].dt.month == 2) & (df["date"].dt.day == 14)).astype(float)
-        df["val_active"] = np.where(df["tet_phase"] == "none", is_valentine, 0.0)
+        # Ngày lễ đặc biệt
+        df["is_valentine"] = ((df["date"].dt.month == 2) & (df["date"].dt.day == 14)).astype(float)
+        df["is_womens_day"] = ((df["date"].dt.month == 3) & (df["date"].dt.day == 8)).astype(float)
+        df["is_new_year"] = ((df["date"].dt.month == 1) & (df["date"].dt.day == 1)).astype(float)
         return df
 
-    def _build_features_v2(self, df: pd.DataFrame, shared_cols: Optional[List[str]] = None) -> pd.DataFrame:
+    def _build_features(self, df: pd.DataFrame, shared_cols: Optional[List[str]] = None) -> pd.DataFrame:
         st = df["store_type"]
         city = df["city"]
         dow = df["date"].dt.dayofweek.astype(str)
+        is_weekend = df["date"].dt.dayofweek.isin([5, 6]).astype(float)
         is_nat = (df["nat_holiday"] != "none").astype(str)
         is_evt = (df["evt_holiday"] != "none").astype(str)
 
+        # Categorical dummies
         cat_df = pd.DataFrame(
             {
                 "st_dow": st + "_" + dow,
@@ -106,6 +111,7 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         )
         X_cat = pd.get_dummies(cat_df, dtype=float)
 
+        # Numerical & Interaction features
         days_open = (df["date"] - df["open_date"]).dt.days
         X_num = pd.DataFrame(index=df.index)
         X_num["grand_open"] = days_open.between(0, 2).astype(float)
@@ -113,30 +119,40 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         X_num["uni_summer"] = ((st == "university") & (df["date"].dt.month.isin([7, 8]))).astype(float)
         X_num["uni_september"] = ((st == "university") & (df["date"].dt.month == 9)).astype(float)
         X_num["global_trend"] = (df["date"] - pd.Timestamp("2024-01-01")).dt.days / 365.25
-        X_num["is_promo_global"] = df["is_promo"].astype(float)
-        X_num["val_active"] = df["val_active"]
+        
+        # Exact promotional features from test.csv / train.csv
+        promo_flt = df["is_promo"].astype(float)
+        X_num["is_promo_global"] = promo_flt
+        X_num["promo_weekend"] = promo_flt * is_weekend
+        
+        # Special Day features
+        X_num["is_valentine"] = df["is_valentine"]
+        X_num["is_womens_day"] = df["is_womens_day"]
+        X_num["is_new_year"] = df["is_new_year"]
 
         for s_type in ["mall", "office", "residential", "street", "university"]:
             m = (st == s_type).astype(float)
-            X_num[f"promo_{s_type}"] = m * df["is_promo"].astype(float)
-            # Phân tách phi tuyến: Mưa nhẹ (0-15mm) vs Mưa ngập (>15mm)
+            X_num[f"promo_{s_type}"] = m * promo_flt
+            # Weather effects: non-linear light rain vs heavy rain
             X_num[f"rain_light_{s_type}"] = m * (np.clip(df["rain_mm"], 0, 15.0) / 15.0)
             X_num[f"rain_heavy_{s_type}"] = m * (np.clip(df["rain_mm"] - 15.0, 0, 60.0) / 45.0)
-            # Nhiệt độ theo thành phố
+            # Temperature anomalies by city
             X_num[f"temp_hn_{s_type}"] = m * (city == "Ha Noi").astype(float) * ((df["temp_c"] - 24.0) / 10.0)
             X_num[f"temp_hcm_{s_type}"] = m * (city == "Ho Chi Minh").astype(float) * ((df["temp_c"] - 28.0) / 10.0)
+            X_num[f"temp_dn_{s_type}"] = m * (city == "Da Nang").astype(float) * ((df["temp_c"] - 26.0) / 10.0)
 
         X_all = pd.concat([X_cat, X_num], axis=1)
         if shared_cols is not None:
             X_all = X_all.reindex(columns=shared_cols, fill_value=0.0)
         return X_all
 
-    def _build_gbdt_v2(self, df: pd.DataFrame, mu_stage1: np.ndarray) -> pd.DataFrame:
+    def _build_gbdt(self, df: pd.DataFrame, mu_stage1: np.ndarray) -> pd.DataFrame:
         gbdt_num = pd.DataFrame(
             {
                 "store_int": df["store_id"].map(self.store_ints_).values,
                 "mu_stage1": mu_stage1,
                 "dow": df["date"].dt.dayofweek.values,
+                "is_weekend": df["date"].dt.dayofweek.isin([5, 6]).astype(float).values,
                 "is_promo": df["is_promo"].astype(float).values,
                 "temp_c": df["temp_c"].values,
                 "rain_mm": df["rain_mm"].values,
@@ -144,6 +160,8 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
                 "seats": df["seats"].values,
                 "area_m2": df["area_m2"].values,
                 "has_parking": df["has_parking"].values,
+                "is_valentine": df["is_valentine"].values,
+                "is_womens_day": df["is_womens_day"].values,
             },
             index=df.index,
         )
@@ -160,14 +178,14 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         weather_raw: pd.DataFrame,
         holidays_raw: pd.DataFrame,
     ):
-        """Huấn luyện mô hình Thế hệ 2 toàn diện."""
+        """Huấn luyện mô hình Thế hệ 3 toàn diện trên dữ liệu lịch sử."""
         self.stores_c_ = clean_stores(stores_raw)
         self.weather_c_ = clean_weather(weather_raw, self.stores_c_["city"].unique())
         self.nat_hol_, self.evt_hol_, self.tet_dates_ = clean_holidays(holidays_raw)
         self.train_c_, self.clean_stats_ = clean_train(train_raw, self.stores_c_)
 
-        fit_df = self._enrich_data_v2(self.train_c_)
-        X_shared = self._build_features_v2(fit_df)
+        fit_df = self._enrich_data(self.train_c_)
+        X_shared = self._build_features(fit_df)
         self.shared_cols_ = list(X_shared.columns)
 
         X_store = pd.get_dummies(fit_df["store_id"], prefix="sid", dtype=float)
@@ -241,15 +259,15 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
 
         # Stage 2: HistGradientBoosting trên thặng dư
         mu_stage1_fit = pred_sh_fit + fit_df["store_id"].map(self.store_ints_).values
-        X_gbdt_fit = self._build_gbdt_v2(fit_df, mu_stage1_fit)
+        X_gbdt_fit = self._build_gbdt(fit_df, mu_stage1_fit)
         self.gbdt_cols_ = list(X_gbdt_fit.columns)
 
         self.hgb_ = HistGradientBoostingRegressor(
-            max_iter=90,
+            max_iter=100,
             learning_rate=0.03,
             max_depth=3,
-            min_samples_leaf=50,
-            l2_regularization=25.0,
+            min_samples_leaf=45,
+            l2_regularization=20.0,
             random_state=self.random_state,
         )
         self.hgb_.fit(X_gbdt_fit, y_log - mu_stage1_fit, sample_weight=w_fit)
@@ -257,16 +275,16 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
 
     def predict(self, target_df: pd.DataFrame) -> np.ndarray:
         """Dự báo doanh thu (triệu VNĐ) tối ưu trực tiếp cho thang đo RMSLE."""
-        val_df = self._enrich_data_v2(target_df[["date", "store_id", "is_promo"]])
-        X_sh_val = self._build_features_v2(val_df, shared_cols=self.shared_cols_)
+        val_df = self._enrich_data(target_df[["date", "store_id", "is_promo"]])
+        X_sh_val = self._build_features(val_df, shared_cols=self.shared_cols_)
         h_days = np.maximum((val_df["date"] - self.max_train_date_).dt.days.values, 1)
 
         pred_sh_val = X_sh_val.values @ self.sh_coef_ + self.sh_int_
         ar_corr = self.ar_scale * (self.ar_rho ** h_days) * val_df["store_id"].map(self.u_T_).values
         mu_stage1 = pred_sh_val + val_df["store_id"].map(self.store_ints_).values + ar_corr
 
-        # Thặng dư từ GBDT
-        X_gbdt_val = self._build_gbdt_v2(val_df, mu_stage1)
+        # Thặng dư từ GBDT Stage 2
+        X_gbdt_val = self._build_gbdt(val_df, mu_stage1)
         res_gbdt = self.hgb_.predict(X_gbdt_val)
 
         mu_final = mu_stage1 + self.gbdt_weight * res_gbdt
@@ -283,5 +301,5 @@ class CafeRevenueModelV2(BaseEstimator, RegressorMixin):
         return filepath
 
     @classmethod
-    def load(cls, filepath: str) -> "CafeRevenueModelV2":
+    def load(cls, filepath: str) -> "CafeRevenueModelV3":
         return joblib.load(filepath)

@@ -1,11 +1,11 @@
 """
 src package initialization
 Xuất các lớp và hàm chính của hệ thống dự báo doanh thu Cafe:
-- Config: cấu hình đường dẫn và siêu tham số
-- BaselineWeekdayModel, weekday_median: mô hình chuẩn theo baseline
-- CafeRevenueModel, build_test_grid_if_missing: mô hình nâng cấp tối ưu leaderboard
-- clean_stores, clean_weather, clean_holidays, clean_train: pipeline làm sạch
-- enrich_data, build_shared_matrix, build_gbdt_matrix: pipeline đặc trưng
+- Config: cấu hình đường dẫn và mốc kiểm định
+- BaselineWeekdayModel, weekday_median: mô hình baseline đối chứng
+- CafeRevenueModelV3: mô hình tối ưu thế hệ 3
+- clean_stores, clean_weather, clean_holidays, clean_train, clean_test, build_test_grid_if_missing: pipeline làm sạch
+- enrich_data, build_shared_matrix: pipeline đặc trưng dùng trong notebook phân tích
 """
 
 from src.config import (
@@ -19,15 +19,10 @@ from src.config import (
     WEATHER_PATH,
     HOLIDAYS_PATH,
     SAMPLE_SUB_PATH,
-    CAFE_MODEL_PATH,
-    CAFE_MODEL_V2_PATH,
     CAFE_MODEL_V3_PATH,
     BASELINE_MODEL_PATH,
-    SUBMISSION_PATH,
-    SUBMISSION_V2_PATH,
     SUBMISSION_V3_PATH,
     SUBMISSION_BASELINE_PATH,
-    MODEL_PARAMS,
     EVAL_QUARTERS,
 )
 from src.cleaning import (
@@ -36,21 +31,16 @@ from src.cleaning import (
     clean_holidays,
     clean_train,
     clean_test,
+    build_test_grid_if_missing,
 )
 from src.features import (
     enrich_data,
     build_shared_matrix,
-    build_gbdt_matrix,
 )
 from src.baseline_model import (
     BaselineWeekdayModel,
     weekday_median,
 )
-from src.cafe_model import (
-    CafeRevenueModel,
-    build_test_grid_if_missing,
-)
-from src.cafe_model_v2 import CafeRevenueModelV2
 from src.cafe_model_v3 import CafeRevenueModelV3
 
 __all__ = [
@@ -64,28 +54,20 @@ __all__ = [
     "WEATHER_PATH",
     "HOLIDAYS_PATH",
     "SAMPLE_SUB_PATH",
-    "CAFE_MODEL_PATH",
-    "CAFE_MODEL_V2_PATH",
     "CAFE_MODEL_V3_PATH",
     "BASELINE_MODEL_PATH",
-    "SUBMISSION_PATH",
-    "SUBMISSION_V2_PATH",
     "SUBMISSION_V3_PATH",
     "SUBMISSION_BASELINE_PATH",
-    "MODEL_PARAMS",
     "EVAL_QUARTERS",
     "clean_stores",
     "clean_weather",
     "clean_holidays",
     "clean_train",
     "clean_test",
+    "build_test_grid_if_missing",
     "enrich_data",
     "build_shared_matrix",
-    "build_gbdt_matrix",
     "BaselineWeekdayModel",
     "weekday_median",
-    "CafeRevenueModel",
-    "CafeRevenueModelV2",
     "CafeRevenueModelV3",
-    "build_test_grid_if_missing",
 ]

@@ -132,3 +132,34 @@ def clean_test(test_raw: pd.DataFrame, stores_clean: pd.DataFrame) -> Tuple[pd.D
         "unknown_stores": list(unknown_stores),
     }
     return df, stats
+
+
+def build_test_grid_if_missing(
+    stores_df: pd.DataFrame,
+    sample_sub_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Dựng lưới test Q1/2026 (3.869 dòng) khớp chính xác sample_submission.csv."""
+    st_tmp = stores_df.assign(st=stores_df["store_type"].str.lower().str.strip())
+    active = st_tmp[st_tmp["store_id"] != "S02"][["store_id", "st"]]
+    grid = (
+        pd.MultiIndex.from_product(
+            [pd.date_range("2026-01-01", "2026-03-31"), active["store_id"]],
+            names=["date", "store_id"],
+        )
+        .to_frame()
+        .reset_index(drop=True)
+    )
+    grid = (
+        grid.merge(active, on="store_id")
+        .sort_values(["date", "store_id"])
+        .reset_index(drop=True)
+    )
+    tet_off = (grid["date"] - pd.Timestamp("2026-02-17")).dt.days
+    closed = (
+        ((grid["st"] == "office") & tet_off.between(-2, 2))
+        | ((grid["st"] == "university") & tet_off.between(-2, 3))
+    )
+    test_df = grid[~closed][["date", "store_id"]].reset_index(drop=True)
+    test_df.insert(0, "id", sample_sub_df["id"].values)
+    test_df["is_promo"] = False
+    return test_df

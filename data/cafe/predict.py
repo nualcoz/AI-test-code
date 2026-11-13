@@ -32,16 +32,13 @@ from src.config import (
     HOLIDAYS_PATH,
     SAMPLE_SUB_PATH,
     CAFE_MODEL_V3_PATH,
-    CAFE_MODEL_V2_PATH,
     BASELINE_MODEL_PATH,
-    SUBMISSION_PATH,
     SUBMISSION_V3_PATH,
     SUBMISSION_BASELINE_PATH,
 )
-from src.cleaning import clean_stores, clean_test
+from src.cleaning import clean_stores, clean_test, build_test_grid_if_missing
 from src.baseline_model import BaselineWeekdayModel
 from src.cafe_model_v3 import CafeRevenueModelV3
-from src.cafe_model import build_test_grid_if_missing
 
 
 def main():
@@ -72,10 +69,6 @@ def main():
     if os.path.exists(CAFE_MODEL_V3_PATH):
         print(f"  + Tim thay mo hinh co san: {CAFE_MODEL_V3_PATH}")
         model = CafeRevenueModelV3.load(CAFE_MODEL_V3_PATH)
-    elif os.path.exists(CAFE_MODEL_V2_PATH):
-        print(f"  + Tim thay mo hinh V2: {CAFE_MODEL_V2_PATH}")
-        from src.cafe_model_v2 import CafeRevenueModelV2
-        model = CafeRevenueModelV2.load(CAFE_MODEL_V2_PATH)
     else:
         print("  + Chua co mo hinh san, tien hanh huan luyen moi CafeRevenueModelV3...")
         train_raw = pd.read_csv(TRAIN_PATH)
@@ -105,17 +98,11 @@ def main():
         "revenue": np.round(pred_base, 4),
     })
 
-    # Lưu cả submission.csv gốc và submission_v3.csv
+    # Lưu submission_v3.csv (tối ưu) và submission_baseline.csv (đối chứng)
     sub_cafe.to_csv(SUBMISSION_V3_PATH, index=False)
-    sub_cafe.to_csv(SUBMISSION_PATH, index=False)
     sub_base.to_csv(SUBMISSION_BASELINE_PATH, index=False)
 
-    # Đảm bảo file được copy vào thư mục gốc để người dùng nộp trực tiếp nếu muốn
-    root_sub_cafe = os.path.join(os.path.dirname(SUBMISSION_PATH), "..", "submission.csv")
-    sub_cafe.to_csv(root_sub_cafe, index=False)
-
     print(f"  + Da luu file toi uu: {SUBMISSION_V3_PATH}")
-    print(f"  + Da luu file goc: {root_sub_cafe}")
     print(f"  + Da luu file baseline: {SUBMISSION_BASELINE_PATH}")
 
     # Kiểm tra tính toàn vẹn

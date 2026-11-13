@@ -29,17 +29,12 @@ from src.config import (
     STORES_PATH,
     WEATHER_PATH,
     HOLIDAYS_PATH,
-    CAFE_MODEL_PATH,
-    CAFE_MODEL_V2_PATH,
     CAFE_MODEL_V3_PATH,
     BASELINE_MODEL_PATH,
-    MODEL_PARAMS,
     EVAL_QUARTERS,
 )
-from src.cleaning import clean_train, clean_stores, clean_test
+from src.cleaning import clean_train, clean_stores
 from src.baseline_model import BaselineWeekdayModel
-from src.cafe_model import CafeRevenueModel
-from src.cafe_model_v2 import CafeRevenueModelV2
 from src.cafe_model_v3 import CafeRevenueModelV3
 
 
@@ -88,14 +83,7 @@ def main():
         p_base = base.predict(va_clean)
         score_base = rmsle(va_clean["revenue"].values, p_base)
 
-        # Mô hình CafeModel V1
-        m_v1 = CafeRevenueModel(**MODEL_PARAMS).fit(
-            tr_split, stores_raw, weather_raw, holidays_raw
-        )
-        p_v1 = m_v1.predict(va_clean)
-        score_v1 = rmsle(va_clean["revenue"].values, p_v1)
-
-        # Mô hình CafeModel V3 (Toi uu hoa)
+        # Mô hình CafeModel V3 (Tối ưu hóa)
         m_v3 = CafeRevenueModelV3().fit(
             tr_split, stores_raw, weather_raw, holidays_raw
         )
@@ -106,7 +94,6 @@ def main():
             {
                 "Quarter": q_name,
                 "Baseline": score_base,
-                "CafeModel_v1": score_v1,
                 "CafeModel_v3": score_v3,
                 "Improvement_vs_Base": (score_base - score_v3) / score_base * 100,
             }
@@ -116,7 +103,6 @@ def main():
     avg_row = {
         "Quarter": "Trung binh 4 quy",
         "Baseline": res_df["Baseline"].mean(),
-        "CafeModel_v1": res_df["CafeModel_v1"].mean(),
         "CafeModel_v3": res_df["CafeModel_v3"].mean(),
         "Improvement_vs_Base": res_df["Improvement_vs_Base"].mean(),
     }
