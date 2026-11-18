@@ -80,7 +80,7 @@ def main():
 
     # 3. Xuất file submission
     print("\n[3/4] Xuat file submission ...")
-    sub_cafe = pd.DataFrame({
+    sub_churn = pd.DataFrame({
         "customer_id": sample_sub["customer_id"].values,
         "churn_3m": np.round(pred_churn, 6),
     })
@@ -89,12 +89,8 @@ def main():
         "churn_3m": np.round(pred_base, 6),
     })
 
-    sub_cafe.to_csv(SUBMISSION_PATH, index=False)
+    sub_churn.to_csv(SUBMISSION_PATH, index=False)
     sub_base.to_csv(SUBMISSION_BASELINE_PATH, index=False)
-
-    # Lưu thêm 1 bản tại thư mục gốc để nộp trực tiếp
-    root_sub = os.path.join(os.path.dirname(SUBMISSION_PATH), "..", "submission.csv")
-    sub_cafe.to_csv(root_sub, index=False)
 
     print(f"  + Da luu file toi uu: {SUBMISSION_PATH}")
     print(f"  + Da luu file baseline: {SUBMISSION_BASELINE_PATH}")
@@ -102,10 +98,10 @@ def main():
     # 4. Kiểm tra tính toàn vẹn
     print("\n" + "-" * 50)
     print("KIEM TRA TOAN VEN FILE SUBMISSION:")
-    print(f"  + So luong dong: {len(sub_cafe):,} (Yeu cau: {len(sample_sub):,}) -> {'DUNG' if len(sub_cafe) == len(sample_sub) else 'SAI'}")
-    print(f"  + Cac cot: {list(sub_cafe.columns)} -> {'DUNG' if list(sub_cafe.columns) == ['customer_id', 'churn_3m'] else 'SAI'}")
-    print(f"  + Gia tri NaN: {sub_cafe['churn_3m'].isna().sum()} -> {'DUNG' if sub_cafe['churn_3m'].isna().sum() == 0 else 'SAI'}")
-    print(f"  + Khoang xac suat: Min = {sub_cafe['churn_3m'].min():.4f}, Max = {sub_cafe['churn_3m'].max():.4f}")
+    print(f"  + So luong dong: {len(sub_churn):,} (Yeu cau: {len(sample_sub):,}) -> {'DUNG' if len(sub_churn) == len(sample_sub) else 'SAI'}")
+    print(f"  + Cac cot: {list(sub_churn.columns)} -> {'DUNG' if list(sub_churn.columns) == ['customer_id', 'churn_3m'] else 'SAI'}")
+    print(f"  + Gia tri NaN: {sub_churn['churn_3m'].isna().sum()} -> {'DUNG' if sub_churn['churn_3m'].isna().sum() == 0 else 'SAI'}")
+    print(f"  + Khoang xac suat: Min = {sub_churn['churn_3m'].min():.4f}, Max = {sub_churn['churn_3m'].max():.4f}")
     print(f"  + Nguon du doan: {sub_source}")
     print("-" * 50)
     print("\n>>> HOAN TAT TAO SUBMISSION THANH CONG!")
